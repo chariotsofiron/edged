@@ -192,16 +192,18 @@ mod tests {
         );
         assert_eq!(graph.post_order(1).collect::<Vec<_>>(), [4, 6, 5, 2, 1]);
 
+        // graph from dominance paper
         let graph = Graph::from([
+            (6, 5),
+            (6, 4),
+            (5, 1),
+            (4, 2),
+            (4, 3),
             (1, 2),
             (2, 3),
             (2, 1),
-            (4, 3),
-            (4, 2),
-            (5, 1),
-            (6, 4),
-            (6, 5),
+            (3, 2),
         ]);
-        assert_eq!(graph.post_order(6).collect::<Vec<_>>(), [3, 2, 1, 5, 4, 6]);
+        assert_eq!(graph.post_order(6).collect::<Vec<_>>(), [1, 2, 3, 4, 5, 6]);
     }
 }

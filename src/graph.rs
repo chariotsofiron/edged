@@ -7,6 +7,9 @@
 //! This leads to simpler usage, implementation, and better performance.
 //!
 //! Edges are numbered in order of insertion.
+//! 
+//! We prefer adjancency lists over adjancency matrices because when associating
+//! data with edges, the adjacency list representation is more compact.
 
 /// A compact directed-graph representation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -19,10 +22,16 @@ pub struct Graph {
     end_vertex: Vec<usize>,
 }
 
+impl Default for Graph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Graph {
     /// Constructs an empty graph.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             first: Vec::new(),
             next_edge: Vec::new(),
@@ -32,6 +41,7 @@ impl Graph {
 
     /// Constructs an empty graph with hints for number of vertices and edges
     /// to reduce unnecessary allocations.
+    #[must_use]
     pub fn with_capacity(vertices: usize, edges: usize) -> Self {
         Self {
             first: Vec::with_capacity(vertices),
@@ -62,7 +72,11 @@ impl Graph {
     /// Adds a directed edge to the graph from `from` to `to`. Returns the edge index.
     pub fn push(&mut self, from: usize, to: usize) -> usize {
         // update length of first if necessary
-        let len = self.first.len().max(from + 1).max(to + 1);
+        let len = self
+            .first
+            .len()
+            .max(from.saturating_add(1))
+            .max(to.saturating_add(1));
         self.first.resize_with(len, || None);
 
         // add the edge
@@ -209,12 +223,8 @@ mod tests {
     }
 
     #[test]
-    fn test_graph() {
+    fn test_neighbors() {
         let graph = Graph::from([(2, 3), (2, 4), (4, 1), (1, 2)]);
-
-        println!("{:?}", graph.first);
-
-        // assert_eq!(graph.len(), 5);
         assert_eq!(graph.edge_count(), 4);
         assert_eq!(graph.neighbors(2).collect::<Vec<_>>(), [(4, 1), (3, 0)]);
 
