@@ -45,13 +45,14 @@ impl Graph {
     }
 
     /// Returns the number of edges in the graph.
+    /// Double-counts undirected edges. Includes parallel edges.
     #[must_use]
     pub fn edge_count(&self) -> usize {
         self.end_vertex.len()
     }
 
     /// Adds a directed edge to the graph from `from` to `to`. Returns the edge index.
-    pub fn add_edge(&mut self, from: usize, to: usize) -> usize {
+    pub fn push(&mut self, from: usize, to: usize) -> usize {
         self.next_edge.push(self.first[from]);
         let edge_index = self.end_vertex.len();
         self.first[from] = Some(edge_index);
@@ -69,6 +70,17 @@ impl Graph {
         }
     }
 
+    /// Returns an iterator over all edges in the graph.
+    /// Does not return them in insertion order.
+    #[must_use]
+    pub fn edges(&self) -> EdgesIterator {
+        EdgesIterator {
+            graph: self,
+            parent: 0,
+            neighbors: self.neighbors(0),
+        }
+    }
+
     /// Returns a transposed version of the graph.
     /// <https://en.wikipedia.org/wiki/Transpose_graph>
     #[must_use]
@@ -76,10 +88,38 @@ impl Graph {
         let mut graph = Self::new(self.len(), self.edge_count());
         for node in 0..self.len() {
             for (neighbor, _) in self.neighbors(node) {
-                graph.add_edge(neighbor, node);
+                graph.push(neighbor, node);
             }
         }
         graph
+    }
+}
+
+/// An iterator for all edges in the graph.
+pub struct EdgesIterator<'graph> {
+    /// The graph that this iterator is iterating over.
+    graph: &'graph Graph,
+    /// The current parent vertex.
+    parent: usize,
+    /// The current neighbor iterator.
+    neighbors: NeighborIterator<'graph>,
+}
+
+impl Iterator for EdgesIterator<'_> {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((neighbor, _)) = self.neighbors.next() {
+            Some((self.parent, neighbor))
+        } else {
+            self.parent = self.parent.saturating_add(1);
+            if self.parent < self.graph.len() {
+                self.neighbors = self.graph.neighbors(self.parent);
+                self.next()
+            } else {
+                None
+            }
+        }
     }
 }
 
@@ -103,6 +143,14 @@ impl<'graph> Iterator for NeighborIterator<'graph> {
     }
 }
 
+impl Extend<(usize, usize)> for Graph {
+    fn extend<T: IntoIterator<Item = (usize, usize)>>(&mut self, iter: T) {
+        for (from, to) in iter {
+            self.push(from, to);
+        }
+    }
+}
+
 impl<const N: usize> From<[(usize, usize); N]> for Graph {
     /// Constructs a graph from an array of edges.
     fn from(edges: [(usize, usize); N]) -> Self {
@@ -113,7 +161,7 @@ impl<const N: usize> From<[(usize, usize); N]> for Graph {
             .unwrap_or_default();
         let mut graph = Self::new(vmax.saturating_add(1), edges.len());
         for (u, v) in edges {
-            graph.add_edge(u, v);
+            graph.push(u, v);
         }
         graph
     }
@@ -128,10 +176,10 @@ mod tests {
         let mut graph = Graph::new(3, 2);
         assert!(graph.is_empty());
         assert_eq!(graph.len(), 3);
-        graph.add_edge(0, 1);
-        graph.add_edge(0, 1);
-        graph.add_edge(1, 1);
-        graph.add_edge(1, 0);
+        graph.push(0, 1);
+        graph.push(0, 1);
+        graph.push(1, 1);
+        graph.push(1, 0);
         assert!(!graph.is_empty());
         assert_eq!(graph.edge_count(), 4);
     }
@@ -143,6 +191,9 @@ mod tests {
         assert_eq!(graph.len(), 5);
         assert_eq!(graph.edge_count(), 4);
         assert_eq!(graph.neighbors(2).collect::<Vec<_>>(), [(4, 1), (3, 0)]);
+
+        let edges = graph.edges().collect::<Vec<_>>();
+        assert_eq!(edges, [(1, 2), (2, 4), (2, 3), (4, 1)]);
     }
 
     #[test]
