@@ -1,0 +1,1 @@
+- Would be nice if we could use NonZeroUsize or NonMaxUsize in the graph data structure
