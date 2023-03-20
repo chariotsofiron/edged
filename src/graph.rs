@@ -1,17 +1,14 @@
 //! A graph data structure using an adjacency list representation.
-//!
-//! The graph uses O(|V| + |E|) space, and supports O(1) edge insert.
-//! It does not support node/edge deletions. It supports parallel edges.
-//!
-//! The data structure is not parameterized over the vertex type and just uses `usize`.
-//! This leads to simpler usage, implementation, and better performance.
-//!
-//! Edges are numbered in order of insertion.
-//!
-//! We prefer adjancency lists over adjancency matrices because when associating
-//! data with edges, the adjacency list representation is more compact.
 
-/// A compact directed-graph representation.
+/// An adjacency list graph data structure.
+/// 
+/// Allows parallel edges and self-loops.
+/// 
+/// This data structure is append-only (except for clear), so indices
+/// returned at some point for a given graph will stay valid with this same
+/// graph until it is dropped or clear is called.
+/// 
+/// Space complexity: **O(|V| + |E|)**
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Graph {
     /// Maps a vertex id to the first edge in its adjacency list.
