@@ -4,18 +4,25 @@
 //! <https://github.com/static-analysis-engineering/CodeHawk-Binary/blob/master/chb/app/Cfg.py>
 
 use crate::graph::Graph;
-// use core::cmp::Ordering;
 
-// /// Finds the nearest common dominator of two nodes.
-// fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> usize {
-//     loop {
-//         match finger1.cmp(&finger2) {
-//             Ordering::Less => finger1 = dominators[finger1],
-//             Ordering::Greater => finger2 = dominators[finger2],
-//             Ordering::Equal => return finger1,
-//         }
-//     }
-// }
+/// Finds the nearest common dominator of two nodes.
+/// Walks up the dominator tree from two different nodes until a common parent is reached.
+fn nearest_common_dominator(
+    dominators: &[usize],
+    postorder: &[usize],
+    mut finger1: usize,
+    mut finger2: usize,
+) -> usize {
+    while finger1 != finger2 {
+        while postorder[finger1] < postorder[finger2] {
+            finger1 = dominators[finger1];
+        }
+        while postorder[finger2] < postorder[finger1] {
+            finger2 = dominators[finger2];
+        }
+    }
+    finger1
+}
 
 // /// Calculates the immediate dominators of a graph.
 // ///
@@ -106,26 +113,14 @@ pub fn dominators(graph: &Graph, start: usize) -> Vec<usize> {
             }
             let mut new_idom = usize::MAX;
 
-            for (p, _) in transpose.neighbors(b) {
-                if idoms[p] == usize::MAX {
+            for (predecessor, _) in transpose.neighbors(b) {
+                if idoms[predecessor] == usize::MAX {
                     continue;
                 }
                 if new_idom == usize::MAX {
-                    new_idom = p;
+                    new_idom = predecessor;
                 } else {
-                    let mut node_a = p;
-                    let mut node_b = new_idom;
-                    while node_a != node_b {
-                        // The paper describes comparisons on postorder numbers; we're using
-                        // the reverse-postorder numbers, so we need to flip the comparison
-                        while postorder[node_a] < postorder[node_b] {
-                            node_a = idoms[node_a];
-                        }
-                        while postorder[node_b] < postorder[node_a] {
-                            node_b = idoms[node_b];
-                        }
-                    }
-                    new_idom = node_a;
+                    new_idom = nearest_common_dominator(&idoms, &postorder, predecessor, new_idom);
                 }
             }
             debug_assert!(new_idom != usize::MAX);
