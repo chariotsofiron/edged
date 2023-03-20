@@ -3,72 +3,134 @@
 //! <https://www.cs.rice.edu/~keith/EMBED/dom.pdf>
 //! <https://github.com/static-analysis-engineering/CodeHawk-Binary/blob/master/chb/app/Cfg.py>
 
-use std::cmp::Ordering;
-
 use crate::graph::Graph;
+// use core::cmp::Ordering;
 
-/// Finds the nearest common dominator of two nodes.
-fn intersect(dominators: &[Option<usize>], mut finger1: usize, mut finger2: usize) -> usize {
-    loop {
-        match finger1.cmp(&finger2) {
-            Ordering::Less => finger1 = dominators[finger1].unwrap(),
-            Ordering::Greater => finger2 = dominators[finger2].unwrap(),
-            Ordering::Equal => return finger1,
-        }
-    }
-}
+// /// Finds the nearest common dominator of two nodes.
+// fn intersect(dominators: &[usize], mut finger1: usize, mut finger2: usize) -> usize {
+//     loop {
+//         match finger1.cmp(&finger2) {
+//             Ordering::Less => finger1 = dominators[finger1],
+//             Ordering::Greater => finger2 = dominators[finger2],
+//             Ordering::Equal => return finger1,
+//         }
+//     }
+// }
 
-/// This is an implementation of the engineered ["Simple, Fast Dominance
-/// Algorithm"][0] discovered by Cooper et al.
-///
-/// This algorithm is **O(|V|^2)**, and therefore has slower theoretical running time
-/// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
-/// Cooper et al found it to be faster in practice on control flow graphs of up
-/// to ~30,000 vertices.
-///
-/// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+// /// Calculates the immediate dominators of a graph.
+// ///
+// /// This is an implementation of the engineered ["Simple, Fast Dominance
+// /// Algorithm"][0] discovered by Cooper et al.
+// ///
+// /// This algorithm is **O(|V|^2)**, and therefore has slower theoretical running time
+// /// than the Lengauer-Tarjan algorithm (which is **O(|E| log |V|)**. However,
+// /// Cooper et al found it to be faster in practice on control flow graphs of up
+// /// to ~30,000 vertices.
+// ///
+// /// [0]: http://www.cs.rice.edu/~keith/EMBED/dom.pdf
+// #[must_use]
+// pub fn dominators(graph: &Graph, start: usize) -> Vec<Option<usize>> {
+//     let post_order = graph.post_order(start).collect::<Vec<_>>();
+//     debug_assert!(post_order.last() == Some(&start));
+//     debug_assert!(post_order.len() > 0);
+
+//     // Maps a node to its index into `post_order`.
+//     let mut ordering = vec![0; graph.len()];
+//     for (i, &b) in post_order.iter().enumerate() {
+//         ordering[b] = i;
+//     }
+//     // used for getting predecessors
+//     let transpose = graph.transpose();
+
+//     // Initialize the dominators array
+//     let mut idoms: Vec<Option<usize>> = vec![None; graph.len()];
+
+//     println!("post_order: {:?}", post_order);
+
+//     idoms[start] = Some(start);
+//     let mut changed = true;
+//     while changed {
+//         changed = false;
+//         // Iterate over the nodes in reverse postorder (except for the start node)
+//         for &b in post_order.iter().rev() {
+//             if b == start {
+//                 continue;
+//             }
+//             let new_idom_idx = {
+//                 let mut predecessors = transpose
+//                     .neighbors(b)
+//                     .filter_map(|(pred, _)| (idoms[pred].is_some()).then(|| pred));
+//                 let new_idom_idx = predecessors.next().expect(
+//                     "Because the root is initialized to dominate itself, and is the \
+//                      first node in every path, there must exist a predecessor to this \
+//                      node that also has a dominator",
+//                 );
+//                 predecessors.fold(new_idom_idx, |new_idom_idx, predecessor_idx| {
+//                     intersect(&idoms, new_idom_idx, predecessor_idx)
+//                 })
+//             };
+
+//             if Some(new_idom_idx) != idoms[b] {
+//                 idoms[b] = Some(new_idom_idx);
+//                 changed = true;
+//             }
+//         }
+//     }
+
+//     idoms
+// }
+
+/// Calculates the immediate dominators of a graph.
 #[must_use]
-pub fn dominators(graph: &Graph, start: usize) -> Vec<Option<usize>> {
-    let post_order = graph.post_order(start).collect::<Vec<_>>();
-    debug_assert!(post_order.last() == Some(&start));
-    debug_assert!(post_order.len() > 0);
+pub fn dominators(graph: &Graph, start: usize) -> Vec<usize> {
+    let order = graph.post_order(start).collect::<Vec<_>>();
+    debug_assert!(order.last() == Some(&start));
+    debug_assert!(!order.is_empty());
 
     // Maps a node to its index into `post_order`.
-    let mut ordering = vec![0; graph.len()];
-    for (i, &b) in post_order.iter().enumerate() {
-        ordering[b] = i;
+    let mut postorder = vec![0; graph.len()];
+    for (i, &b) in order.iter().enumerate() {
+        postorder[b] = i;
     }
-    // used for getting predecessors
-    let transpose = graph.transpose();
+    let transpose = graph.transpose(); // used for getting predecessors
+    let mut idoms: Vec<usize> = vec![usize::MAX; graph.len()];
 
-    // Initialize the dominators array
-    let mut idoms: Vec<Option<usize>> = vec![None; graph.len()];
-
-    idoms[start] = Some(start);
+    idoms[start] = start;
     let mut changed = true;
     while changed {
         changed = false;
-        // Iterate over the nodes in reverse postorder (except for the start node)
-        for &b in post_order.iter().rev() {
+
+        for &b in order.iter().rev() {
             if b == start {
                 continue;
             }
-            let new_idom_idx = {
-                let mut predecessors = transpose
-                    .neighbors(b)
-                    .filter_map(|(pred, _)| (idoms[pred].is_some()).then(|| pred));
-                let new_idom_idx = predecessors.next().expect(
-                    "Because the root is initialized to dominate itself, and is the \
-                     first node in every path, there must exist a predecessor to this \
-                     node that also has a dominator",
-                );
-                predecessors.fold(new_idom_idx, |new_idom_idx, predecessor_idx| {
-                    intersect(&idoms, new_idom_idx, predecessor_idx)
-                })
-            };
+            let mut new_idom = usize::MAX;
 
-            if Some(new_idom_idx) != idoms[b] {
-                idoms[b] = Some(new_idom_idx);
+            for (p, _) in transpose.neighbors(b) {
+                if idoms[p] == usize::MAX {
+                    continue;
+                }
+                if new_idom == usize::MAX {
+                    new_idom = p;
+                } else {
+                    let mut node_a = p;
+                    let mut node_b = new_idom;
+                    while node_a != node_b {
+                        // The paper describes comparisons on postorder numbers; we're using
+                        // the reverse-postorder numbers, so we need to flip the comparison
+                        while postorder[node_a] < postorder[node_b] {
+                            node_a = idoms[node_a];
+                        }
+                        while postorder[node_b] < postorder[node_a] {
+                            node_b = idoms[node_b];
+                        }
+                    }
+                    new_idom = node_a;
+                }
+            }
+            debug_assert!(new_idom != usize::MAX);
+            if idoms[b] != new_idom {
+                idoms[b] = new_idom;
                 changed = true;
             }
         }
@@ -83,6 +145,7 @@ mod tests {
 
     #[test]
     fn test_dominators() {
+        // from cooper et al paper <https://www.cs.rice.edu/~keith/EMBED/dom.pdf>
         let graph = Graph::from([
             (6, 5),
             (6, 4),
@@ -96,9 +159,26 @@ mod tests {
         ]);
 
         let idoms = dominators(&graph, 6);
-        assert_eq!(
-            idoms,
-            vec![None, Some(6), Some(6), Some(6), Some(6), Some(6), Some(6)]
-        );
+        assert_eq!(idoms, vec![usize::MAX, 6, 6, 6, 6, 6, 6]);
+
+        // from wikipedia <https://en.wikipedia.org/wiki/Dominator_(graph_theory)>
+        let graph = Graph::from([(1, 2), (2, 3), (2, 4), (2, 6), (3, 5), (4, 5), (5, 2)]);
+        let idoms = dominators(&graph, 1);
+        // TODO, this is wrong
+        assert_eq!(idoms, vec![usize::MAX, 1, 1, 2, 2, 2, 2]);
+
+        let graph = Graph::from([
+            (1, 2),
+            (2, 3),
+            (2, 4),
+            (3, 5),
+            (4, 6),
+            (5, 3),
+            (5, 6),
+            (6, 2),
+            (6, 7),
+        ]);
+        let idoms = dominators(&graph, 1);
+        assert_eq!(idoms, vec![usize::MAX, 1, 1, 2, 2, 3, 2, 6]);
     }
 }

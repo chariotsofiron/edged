@@ -7,7 +7,7 @@
 //! This leads to simpler usage, implementation, and better performance.
 //!
 //! Edges are numbered in order of insertion.
-//! 
+//!
 //! We prefer adjancency lists over adjancency matrices because when associating
 //! data with edges, the adjacency list representation is more compact.
 
