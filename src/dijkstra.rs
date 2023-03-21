@@ -2,7 +2,7 @@
 use alloc::collections::BinaryHeap;
 use core::cmp::Reverse;
 
-use crate::graph::Graph;
+use crate::graph::adjlist::Graph;
 
 impl Graph {
     /// Dijkstra's algorithm.

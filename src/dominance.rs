@@ -3,7 +3,7 @@
 //! <https://www.cs.rice.edu/~keith/EMBED/dom.pdf>
 //! <https://github.com/static-analysis-engineering/CodeHawk-Binary/blob/master/chb/app/Cfg.py>
 
-use crate::graph::Graph;
+use crate::graph::adjlist::Graph;
 
 /// Finds the nearest common dominator of two nodes.
 /// Walks up the dominator tree from two different nodes until a common parent is reached.
@@ -103,7 +103,7 @@ pub fn immediate_dominators(graph: &Graph, start: usize) -> Vec<usize> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{dominance::immediate_dominators, graph::Graph};
+    use crate::{dominance::immediate_dominators, graph::adjlist::Graph};
 
     #[test]
     fn test_dominators() {

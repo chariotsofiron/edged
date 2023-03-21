@@ -1,6 +1,6 @@
 //! Different traversal algorithms for the graph.
 //! <https://en.wikipedia.org/wiki/Graph_traversal>
-use crate::graph::{Graph, NeighborIterator};
+use crate::graph::adjlist::{Graph, NeighborIterator};
 use alloc::collections::VecDeque;
 
 impl Graph {
