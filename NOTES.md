@@ -15,4 +15,7 @@
 - Adding new nodes can be slow... (can be amortized)
 
 
+Don't add node data for now...
+Can always pass in an associated array
+
 

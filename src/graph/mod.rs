@@ -2,9 +2,8 @@
 //! <https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)>
 // pub mod adjlist;
 pub mod matrix;
-pub mod graph_type;
+pub mod traits;
 pub mod util;
-
 
 // pub trait Graph {
 //     type Weight;
