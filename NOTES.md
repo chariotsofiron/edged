@@ -23,7 +23,10 @@ Can always pass in an associated array
 ## Links
 
 **Dominance**
+- https://baziotis.cs.illinois.edu/compilers/visualizing-dominators.html
 - https://en.wikipedia.org/wiki/Dominator_(graph_theory)
-- https://www.cs.rice.edu/~keith/EMBED/dom.pdf
+- https://github.com/alexcrichton/l4c/blob/master/src/middle/ssa.rs
+- https://github.com/petgraph/petgraph/blob/master/src/algo/dominators.rs
 - https://github.com/static-analysis-engineering/CodeHawk-Binary/blob/master/chb/app/Cfg.py
+- https://www.cs.rice.edu/~keith/EMBED/dom.pdf
 

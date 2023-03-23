@@ -2,7 +2,7 @@
 use core::marker::PhantomData;
 
 use super::{
-    traits::{Children, Directed, Direction, Parents},
+    traits::{Children, Directed, Direction, Parents, VertexCount},
     util::{extend_linearized_matrix, to_linear_matrix_position},
 };
 
@@ -235,5 +235,11 @@ where
             column: node,
             ty: PhantomData,
         }
+    }
+}
+
+impl<'graph, E, Ty> VertexCount for &'graph Graph<E, Ty> {
+    fn vertex_count(self) -> usize {
+        self.n_nodes
     }
 }

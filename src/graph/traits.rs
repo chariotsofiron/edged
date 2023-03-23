@@ -48,3 +48,9 @@ pub trait Parents: GraphRef {
     /// Returns an iterator over the children for a vertex
     fn parents(self, vertex: usize) -> Self::Iter;
 }
+
+/// A trait for graphs that have a known number of vertices.
+pub trait VertexCount: GraphRef {
+    /// Returns the number of vertices in the graph.
+    fn vertex_count(self) -> usize;
+}
