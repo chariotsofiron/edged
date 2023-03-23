@@ -19,3 +19,11 @@ Don't add node data for now...
 Can always pass in an associated array
 
 
+
+## Links
+
+**Dominance**
+- https://en.wikipedia.org/wiki/Dominator_(graph_theory)
+- https://www.cs.rice.edu/~keith/EMBED/dom.pdf
+- https://github.com/static-analysis-engineering/CodeHawk-Binary/blob/master/chb/app/Cfg.py
+

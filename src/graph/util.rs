@@ -83,4 +83,3 @@ fn extend_lower_triangular_matrix<T: Default>(node_adjacencies: &mut Vec<T>, new
     let blah = (new_capacity * (new_capacity - 1)) / 2 + new_capacity + 1;
     ensure_len(node_adjacencies, blah);
 }
-

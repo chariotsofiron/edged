@@ -2,9 +2,13 @@
 //! <https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)>
 pub mod matrix;
 pub mod traits;
-pub mod visit_map;
-#[allow(clippy::arithmetic_side_effects, clippy::integer_arithmetic, clippy::integer_division)]
+#[allow(
+    clippy::arithmetic_side_effects,
+    clippy::integer_arithmetic,
+    clippy::integer_division
+)]
 pub mod util;
+pub mod visit_map;
 
 // pub trait Graph {
 //     type Weight;

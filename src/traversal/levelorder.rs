@@ -14,11 +14,11 @@ pub struct LevelOrder<G> {
     discovered: VisitMap,
 }
 
-impl<'graph, G> LevelOrder<&'graph G> {
+impl<G> LevelOrder<G> {
     /// Create a new `LevelOrder` iterator.
-    pub fn new(graph: &'graph G, start: usize) -> Self
+    pub fn new(graph: G, start: usize) -> Self
     where
-        &'graph G: Children,
+        G: Children,
     {
         Self {
             graph,

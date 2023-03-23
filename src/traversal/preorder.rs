@@ -13,11 +13,11 @@ pub struct PreOrder<G> {
     discovered: VisitMap,
 }
 
-impl<'graph, G> PreOrder<&'graph G> {
+impl<G> PreOrder<G> {
     /// Create a new `PreOrder` iterator.
-    pub fn new(graph: &'graph G, start: usize) -> Self
+    pub fn new(graph: G, start: usize) -> Self
     where
-        &'graph G: Children,
+        G: Children,
     {
         Self {
             graph,

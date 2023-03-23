@@ -14,12 +14,11 @@ pub struct PostOrder<G> {
     finished: VisitMap,
 }
 
-
-impl<'graph, G> PostOrder<&'graph G> {
+impl<G> PostOrder<G> {
     /// Create a new `PostOrder` iterator.
-    pub fn new(graph: &'graph G, start: usize) -> Self
+    pub fn new(graph: G, start: usize) -> Self
     where
-        &'graph G: Children,
+        G: Children,
     {
         Self {
             graph,
