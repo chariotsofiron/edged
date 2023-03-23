@@ -1,10 +1,12 @@
-use std::{fmt::Debug, marker::PhantomData};
+//! Adjacency matrix graph implementation.
+use core::marker::PhantomData;
 
 use super::{
-    traits::{Directed, Direction},
+    traits::{Children, Directed, Direction, Parents},
     util::{extend_linearized_matrix, to_linear_matrix_position},
 };
 
+/// A graph represented using an adjacency matrix.
 pub struct Graph<E, Ty = Directed> {
     /// The node adjacencies.
     adjacencies: Vec<Option<E>>,
@@ -12,6 +14,7 @@ pub struct Graph<E, Ty = Directed> {
     n_nodes: usize,
     /// The number of edges in the graph.
     n_edges: usize,
+    /// Whether the graph is directed or undirected.
     ty: PhantomData<Ty>,
 }
 
@@ -19,7 +22,9 @@ impl<E, Ty> Graph<E, Ty>
 where
     Ty: Direction,
 {
-    pub fn new() -> Self {
+    /// Constructs a new graph.
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             adjacencies: Vec::new(),
             n_edges: 0,
@@ -28,6 +33,8 @@ where
         }
     }
 
+    /// Creates a new graph with the specified capacity.
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         let mut adjacencies = Vec::new();
         extend_linearized_matrix::<Ty, Option<E>>(&mut adjacencies, 0, capacity);
@@ -40,13 +47,25 @@ where
     }
 
     /// Returns the number of vertices in the graph.
-    pub fn len(&self) -> usize {
+    #[must_use]
+    pub const fn len(&self) -> usize {
         self.n_nodes
     }
 
-    pub fn update_edge(&mut self, a: usize, b: usize, weight: E) -> Option<E> {
+    /// Returns `true` if the graph contains no edges.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.n_edges == 0
+    }
+
+    /// Adds an edge from `a` to `b` to the graph.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either of the nodes don't exist.
+    pub fn add_edge(&mut self, a: usize, b: usize, weight: E) {
         // allocate if needed
-        let max_node = (a + 1).max(b + 1);
+        let max_node = (a.wrapping_add(1)).max(b.wrapping_add(1));
         if max_node > self.n_nodes {
             extend_linearized_matrix::<Ty, Option<E>>(
                 &mut self.adjacencies,
@@ -56,74 +75,13 @@ where
             self.n_nodes = max_node;
         }
 
-        let index = self.to_edge_position_unchecked(a, b);
-        let old_weight = std::mem::replace(&mut self.adjacencies[index], Some(weight));
-        if old_weight.is_none() {
-            self.n_edges += 1;
-        }
-        old_weight
-    }
-
-    pub fn add_edge(&mut self, a: usize, b: usize, weight: E) {
-        assert!(self.update_edge(a, b, weight).is_none());
-    }
-
-    /// Remove the edge from `a` to `b` to the graph.
-    ///
-    /// **Panics** if either of the nodes don't exist.
-    pub fn remove_edge(&mut self, a: usize, b: usize) -> E {
-        let index = self.to_edge_position_unchecked(a, b);
-        let old_weight = std::mem::replace(&mut self.adjacencies[index], None);
-        if old_weight.is_some() {
-            self.n_edges -= 1;
-        }
-        old_weight.expect("Edge doesn't exist")
-    }
-
-    /// Converts a pair of node indices to a linearized matrix position.
-    /// Returns `None` if the indices are out of bounds.
-    #[inline]
-    fn to_edge_position(&self, a: usize, b: usize) -> Option<usize> {
-        if std::cmp::max(a, b) >= self.n_nodes {
-            return None;
-        }
-        Some(self.to_edge_position_unchecked(a, b))
-    }
-
-    /// Converts a pair of node indices to a linearized matrix position.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the indices are out of bounds.
-    #[inline]
-    fn to_edge_position_unchecked(&self, a: usize, b: usize) -> usize {
-        to_linear_matrix_position::<Ty>(a, b, self.n_nodes)
-    }
-
-    pub fn children(&self, node: usize) -> Edges<'_, Ty, E> {
-        Edges {
-            iter_direction: NeighborIterDirection::Columns,
-            adjacencies: &self.adjacencies,
-            node_capacity: self.n_nodes,
-            row: node,
-            column: 0,
-            ty: PhantomData,
-        }
-    }
-
-    pub fn parents(&self, node: usize) -> Edges<'_, Ty, E> {
-        Edges {
-            iter_direction: NeighborIterDirection::Rows,
-            adjacencies: &self.adjacencies,
-            node_capacity: self.n_nodes,
-            row: 0,
-            column: node,
-            ty: PhantomData,
-        }
+        let index = to_linear_matrix_position::<Ty>(a, b, self.n_nodes);
+        self.adjacencies[index] = Some(weight);
     }
 }
 
-impl<const N: usize, E: Debug, Ty: Direction> From<[(usize, usize, E); N]> for Graph<E, Ty> {
+/// Constructs a weighted graph from an array of edges.
+impl<const N: usize, E, Ty: Direction> From<[(usize, usize, E); N]> for Graph<E, Ty> {
     /// Constructs a graph from an array of edges.
     fn from(edges: [(usize, usize, E); N]) -> Self {
         let mut graph = Self::new();
@@ -134,25 +92,45 @@ impl<const N: usize, E: Debug, Ty: Direction> From<[(usize, usize, E); N]> for G
     }
 }
 
+/// Constructs an unweighted graph from an array of edges.
+impl<const N: usize, Ty: Direction> From<[(usize, usize); N]> for Graph<(), Ty> {
+    fn from(edges: [(usize, usize); N]) -> Self {
+        let mut graph = Self::new();
+        for (from, to) in edges {
+            graph.add_edge(from, to, ());
+        }
+        graph
+    }
+}
+
+/// The direction of the iterator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum NeighborIterDirection {
+pub enum IterDirection {
+    /// Iterate over rows i.e. children.
     Rows,
+    /// Iterate over columns i.e. parents.
     Columns,
 }
 
 /// Iterator over the edges of from or to a node
 #[derive(Debug, Clone)]
-pub struct Edges<'a, Ty: Direction, E: 'a> {
-    iter_direction: NeighborIterDirection,
-    adjacencies: &'a [Option<E>],
+pub struct Edges<'graph, Ty: Direction, E: 'graph> {
+    /// The direction of the iterator.
+    iter_direction: IterDirection,
+    /// The node adjacencies.
+    adjacencies: &'graph [Option<E>],
+    /// The number of nodes that can be stored in the graph without reallocating.
     node_capacity: usize,
+    /// The row of the next edge to be returned.
     row: usize,
+    /// The column of the next edge to be returned.
     column: usize,
+    /// The type of the graph.
     ty: PhantomData<Ty>,
 }
 
-impl<'a, Ty: Direction, E: 'a> Iterator for Edges<'a, Ty, E> {
-    type Item = (usize, usize, &'a E);
+impl<'graph, Ty: Direction, E: 'graph> Iterator for Edges<'graph, Ty, E> {
+    type Item = (usize, usize, &'graph E);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -163,15 +141,15 @@ impl<'a, Ty: Direction, E: 'a> Iterator for Edges<'a, Ty, E> {
             let (row, column) = (self.row, self.column);
 
             match self.iter_direction {
-                NeighborIterDirection::Rows => self.row += 1,
-                NeighborIterDirection::Columns => self.column += 1,
+                IterDirection::Rows => self.row = self.row.wrapping_add(1),
+                IterDirection::Columns => self.column = self.column.wrapping_add(1),
             }
 
             let p = to_linear_matrix_position::<Ty>(row, column, self.node_capacity);
             if let Some(e) = self.adjacencies[p].as_ref() {
                 let (a, b) = match self.iter_direction {
-                    NeighborIterDirection::Rows => (column, row),
-                    NeighborIterDirection::Columns => (row, column),
+                    IterDirection::Rows => (column, row),
+                    IterDirection::Columns => (row, column),
                 };
                 return Some((a, b, e));
             }
@@ -179,23 +157,83 @@ impl<'a, Ty: Direction, E: 'a> Iterator for Edges<'a, Ty, E> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Graph;
-    use crate::graph::traits::Directed;
+/// Iterator over the edges of from or to a node
+#[derive(Debug, Clone)]
+pub struct Neighbors<'graph, Ty: Direction, E: 'graph> {
+    /// The direction of the iterator.
+    iter_direction: IterDirection,
+    /// The node adjacencies.
+    adjacencies: &'graph [Option<E>],
+    /// The number of nodes that can be stored in the graph without reallocating.
+    node_capacity: usize,
+    /// The row of the next edge to be returned.
+    row: usize,
+    /// The column of the next edge to be returned.
+    column: usize,
+    /// The type of the graph.
+    ty: PhantomData<Ty>,
+}
 
-    #[test]
-    fn test_graph() {
-        // let mut g = Graph::<(), Directed>::new();
+impl<'graph, Ty: Direction, E: 'graph> Iterator for Neighbors<'graph, Ty, E> {
+    type Item = usize;
 
-        // println!("len: {}, capacity: {}", g.len(), g.capacity());
-        // g.update_edge(0, 1, ());
-        // println!("len: {}, capacity: {}", g.len(), g.capacity());
-        // // g.update_edge(2, 4, ());
-        // // println!("len: {}, capacity: {}", g.len(), g.capacity());
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.row.max(self.column) >= self.node_capacity {
+                return None;
+            }
 
-        let graph = Graph::<(), Directed>::from([(2, 3, ()), (2, 4, ()), (4, 1, ()), (1, 2, ())]);
+            let (row, column) = (self.row, self.column);
 
-        println!("{:?}", graph.children(2).collect::<Vec<_>>());
+            match self.iter_direction {
+                IterDirection::Rows => self.row = self.row.wrapping_add(1),
+                IterDirection::Columns => self.column = self.column.wrapping_add(1),
+            }
+
+            let p = to_linear_matrix_position::<Ty>(row, column, self.node_capacity);
+            if self.adjacencies[p].is_some() {
+                let neighbor = match self.iter_direction {
+                    IterDirection::Rows => row,
+                    IterDirection::Columns => column,
+                };
+                return Some(neighbor);
+            }
+        }
+    }
+}
+
+impl<'graph, E, Ty> Children for &'graph Graph<E, Ty>
+where
+    Ty: Direction,
+{
+    type Iter = Neighbors<'graph, Ty, E>;
+
+    fn children(self, node: usize) -> Neighbors<'graph, Ty, E> {
+        Neighbors {
+            iter_direction: IterDirection::Columns,
+            adjacencies: &self.adjacencies,
+            node_capacity: self.n_nodes,
+            row: node,
+            column: 0,
+            ty: PhantomData,
+        }
+    }
+}
+
+impl<'graph, E, Ty> Parents for &'graph Graph<E, Ty>
+where
+    Ty: Direction,
+{
+    type Iter = Neighbors<'graph, Ty, E>;
+
+    fn parents(self, node: usize) -> Neighbors<'graph, Ty, E> {
+        Neighbors {
+            iter_direction: IterDirection::Rows,
+            adjacencies: &self.adjacencies,
+            node_capacity: self.n_nodes,
+            row: 0,
+            column: node,
+            ty: PhantomData,
+        }
     }
 }

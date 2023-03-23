@@ -1,21 +1,27 @@
+//! Util functions for adjacency matrix graphs.
+use crate::util::ensure_len;
+
 use super::traits::Direction;
 
+/// Converts a row and column index to a position in a flat square matrix.
 #[inline]
-fn to_flat_square_matrix_position(row: usize, column: usize, width: usize) -> usize {
+const fn to_flat_square_matrix_position(row: usize, column: usize, width: usize) -> usize {
     row * width + column
 }
 
 /// Converts a row and column index to a position in a lower triangular matrix.
 #[inline]
-fn to_lower_triangular_matrix_position(row: usize, column: usize) -> usize {
-    let (row, column) = if row > column {
+const fn to_lower_triangular_matrix_position(row: usize, column: usize) -> usize {
+    let (long, short) = if row > column {
         (row, column)
     } else {
         (column, row)
     };
-    (row * (row + 1)) / 2 + column
+    (long * (long + 1)) / 2 + short
 }
 
+/// Converts a row and column index to a position in a matrix.
+#[must_use]
 #[inline]
 pub fn to_linear_matrix_position<Ty: Direction>(row: usize, column: usize, width: usize) -> usize {
     if Ty::is_directed() {
@@ -35,12 +41,13 @@ pub fn extend_linearized_matrix<Ty: Direction, T: Default>(
     new_capacity: usize,
 ) {
     if Ty::is_directed() {
-        extend_flat_square_matrix(node_adjacencies, old_node_capacity, new_capacity)
+        extend_flat_square_matrix(node_adjacencies, old_node_capacity, new_capacity);
     } else {
-        extend_lower_triangular_matrix(node_adjacencies, new_capacity)
+        extend_lower_triangular_matrix(node_adjacencies, new_capacity);
     }
 }
 
+/// Extend a vector representing a square matrix to support holding `new_capacity` nodes.
 #[inline]
 fn extend_flat_square_matrix<T: Default>(
     node_adjacencies: &mut Vec<T>,
@@ -70,19 +77,10 @@ fn extend_flat_square_matrix<T: Default>(
     }
 }
 
+/// Extends a vector representing a lower triangular matrix to support holding `new_capacity` nodes.
 #[inline]
 fn extend_lower_triangular_matrix<T: Default>(node_adjacencies: &mut Vec<T>, new_capacity: usize) {
-    let max_node = new_capacity - 1;
-    let max_pos = to_lower_triangular_matrix_position(max_node, max_node);
-    ensure_len(node_adjacencies, max_pos + 1);
+    let blah = (new_capacity * (new_capacity - 1)) / 2 + new_capacity + 1;
+    ensure_len(node_adjacencies, blah);
 }
 
-/// Grow a Vec by appending the type's default value until the `size` is reached.
-fn ensure_len<T: Default>(v: &mut Vec<T>, size: usize) {
-    if let Some(n) = size.checked_sub(v.len()) {
-        v.reserve(n);
-        for _ in 0..n {
-            v.push(T::default());
-        }
-    }
-}

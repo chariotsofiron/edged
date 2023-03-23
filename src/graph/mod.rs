@@ -1,8 +1,9 @@
 //! A graph is a collection of vertices and edges.
 //! <https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)>
-// pub mod adjlist;
 pub mod matrix;
 pub mod traits;
+pub mod visit_map;
+#[allow(clippy::arithmetic_side_effects, clippy::integer_arithmetic, clippy::integer_division)]
 pub mod util;
 
 // pub trait Graph {

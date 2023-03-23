@@ -1,33 +1,34 @@
-//! Preorder traversal
+//! Level-order traversal.
+
+use alloc::collections::VecDeque;
 
 use crate::graph::{traits::Children, visit_map::VisitMap};
-
-/// Preorder traversal.
+/// Level order traversal, aka breadth-first-search.
 #[derive(Clone, Debug)]
-pub struct PreOrder<G> {
+pub struct LevelOrder<G> {
     /// Reference to the graph
     graph: G,
-    /// The stack of nodes to visit
-    stack: Vec<usize>,
+    /// The queue of nodes to visit
+    queue: VecDeque<usize>,
     /// The map of discovered nodes
     discovered: VisitMap,
 }
 
-impl<'graph, G> PreOrder<&'graph G> {
-    /// Create a new `PreOrder` iterator.
+impl<'graph, G> LevelOrder<&'graph G> {
+    /// Create a new `LevelOrder` iterator.
     pub fn new(graph: &'graph G, start: usize) -> Self
     where
         &'graph G: Children,
     {
         Self {
             graph,
-            stack: vec![start],
+            queue: VecDeque::from(vec![start]),
             discovered: VisitMap::default(),
         }
     }
 }
 
-impl<G> Iterator for PreOrder<G>
+impl<G> Iterator for LevelOrder<G>
 where
     G: Children,
 {
@@ -37,10 +38,10 @@ where
     where
         G: Children,
     {
-        let node = self.stack.pop()?;
+        let node = self.queue.pop_front()?;
         for succ in self.graph.children(node) {
             if self.discovered.visit(succ) {
-                self.stack.push(succ);
+                self.queue.push_back(succ);
             }
         }
         Some(node)
