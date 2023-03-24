@@ -15,10 +15,7 @@ pub struct PreOrder<G> {
 
 impl<G> PreOrder<G> {
     /// Create a new `PreOrder` iterator.
-    pub fn new(graph: G, start: usize) -> Self
-    where
-        G: Children,
-    {
+    pub fn new(graph: G, start: usize) -> Self {
         let mut discovered = VisitMap::default();
         discovered.visit(start);
         Self {
@@ -29,16 +26,10 @@ impl<G> PreOrder<G> {
     }
 }
 
-impl<G> Iterator for PreOrder<G>
-where
-    G: Children,
-{
+impl<G: Children> Iterator for PreOrder<G> {
     type Item = usize;
 
-    fn next(&mut self) -> Option<usize>
-    where
-        G: Children,
-    {
+    fn next(&mut self) -> Option<usize> {
         let node = self.stack.pop()?;
         for succ in self.graph.children(node) {
             if self.discovered.visit(succ) {

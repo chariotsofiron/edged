@@ -244,7 +244,10 @@ impl<'graph, E, Ty> VertexCount for &'graph Graph<E, Ty> {
     }
 }
 
-impl<'graph, E, Ty> Outgoing<&'graph E> for &'graph Graph<E, Ty> where Ty: Direction {
+impl<'graph, E, Ty> Outgoing<&'graph E> for &'graph Graph<E, Ty>
+where
+    Ty: Direction,
+{
     type Iter = Edges<'graph, Ty, E>;
 
     fn outgoing(self, node: usize) -> Edges<'graph, Ty, E> {

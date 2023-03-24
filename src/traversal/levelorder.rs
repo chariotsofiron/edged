@@ -16,10 +16,7 @@ pub struct LevelOrder<G> {
 
 impl<G> LevelOrder<G> {
     /// Create a new `LevelOrder` iterator.
-    pub fn new(graph: G, start: usize) -> Self
-    where
-        G: Children,
-    {
+    pub fn new(graph: G, start: usize) -> Self {
         let mut discovered = VisitMap::default();
         discovered.visit(start);
         Self {
@@ -30,16 +27,10 @@ impl<G> LevelOrder<G> {
     }
 }
 
-impl<G> Iterator for LevelOrder<G>
-where
-    G: Children,
-{
+impl<G: Children> Iterator for LevelOrder<G> {
     type Item = usize;
 
-    fn next(&mut self) -> Option<usize>
-    where
-        G: Children,
-    {
+    fn next(&mut self) -> Option<usize> {
         let node = self.queue.pop_front()?;
         for succ in self.graph.children(node) {
             if self.discovered.visit(succ) {

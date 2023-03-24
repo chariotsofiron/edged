@@ -16,10 +16,7 @@ pub struct PostOrder<G> {
 
 impl<G> PostOrder<G> {
     /// Create a new `PostOrder` iterator.
-    pub fn new(graph: G, start: usize) -> Self
-    where
-        G: Children,
-    {
+    pub fn new(graph: G, start: usize) -> Self {
         Self {
             graph,
             stack: vec![start],
@@ -29,16 +26,10 @@ impl<G> PostOrder<G> {
     }
 }
 
-impl<G> Iterator for PostOrder<G>
-where
-    G: Children,
-{
+impl<G: Children> Iterator for PostOrder<G> {
     type Item = usize;
 
-    fn next(&mut self) -> Option<usize>
-    where
-        G: Children,
-    {
+    fn next(&mut self) -> Option<usize> {
         while let Some(&node) = self.stack.last() {
             if self.discovered.visit(node) {
                 for succ in self.graph.children(node) {
