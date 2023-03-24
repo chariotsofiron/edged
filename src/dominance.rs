@@ -38,8 +38,8 @@ where
 
     // Maps a node to its index in a postorder traversal
     let mut postorder_idx = vec![0; graph.vertex_count()];
-    for (i, &b) in order.iter().enumerate() {
-        postorder_idx[b] = i;
+    for (i, &node) in order.iter().enumerate() {
+        postorder_idx[node] = i;
     }
     order.pop(); // remove the start node
     order.reverse(); // reverse the postorder traversal
@@ -50,9 +50,9 @@ where
     while changed {
         changed = false;
         for &node in &order {
-            let predecessors = graph.parents(node).filter_map(|predecessor| {
-                (dominators[predecessor] != usize::MAX).then_some(predecessor)
-            });
+            let predecessors = graph
+                .parents(node)
+                .filter(|&predecessor| dominators[predecessor] != usize::MAX);
             #[allow(clippy::expect_used)]
             let new_idom = predecessors
                 .reduce(|finger1, finger2| {
@@ -83,14 +83,14 @@ where
     let idoms = immediate_dominators(graph, start);
 
     for &node in &idoms {
-        if node == usize::MAX {
-            continue;
-        }
         let predecessors = graph.parents(node).collect::<Vec<_>>();
         if predecessors.len() >= 2 {
             for &predecessor in &predecessors {
+                if predecessor == usize::MAX {
+                    continue;
+                }
                 let mut finger = predecessor;
-                while finger != node {
+                while finger != idoms[node] {
                     frontiers[finger].push(node);
                     finger = idoms[finger];
                 }
@@ -99,6 +99,24 @@ where
     }
     frontiers
 }
+
+// fn dominance_frontier(&self, start: usize) -> Vec<Vec<usize>> {
+//     let idoms = self.compute_dominator_tree(start);
+//     let mut dom_frontiers: Vec<Vec<usize>> = vec![Vec::new(); self.nodes.len()];
+//     for node in 0..self.nodes.len() {
+//         let allpreds = self.get_predecessors(node);
+//         if allpreds.len() >= 2 {
+//             for &pred in &allpreds {
+//                 let mut runner = pred;
+//                 while runner != idoms[node] {
+//                     dom_frontiers[runner].push(node);
+//                     runner = idoms[runner];
+//                 }
+//             }
+//         }
+//     }
+//     dom_frontiers
+// }
 
 #[cfg(test)]
 mod tests {
@@ -146,19 +164,30 @@ mod tests {
         let idoms = immediate_dominators(&graph, 1);
         assert_eq!(idoms, vec![usize::MAX, 1, 1, 2, 2, 3, 2, 6]);
 
-        // let frontier = dominance_frontiers(&graph, 1);
-        // assert_eq!(
-        //     frontier,
-        //     vec![
-        //         Vec::new(),
-        //         Vec::new(),
-        //         vec![1],
-        //         vec![2],
-        //         vec![2],
-        //         vec![3],
-        //         vec![2],
-        //         vec![6]
-        //     ]
-        // );
+        let graph = Graph::<_, Directed>::from([(1, 2), (1, 3), (2, 5), (3, 4), (4, 5)]);
+        let idoms = immediate_dominators(&graph, 1);
+        assert_eq!(idoms, vec![usize::MAX, 1, 1, 1, 3, 1]);
+    }
+
+    #[test]
+    fn test_frontiers() {
+        let graph =
+            Graph::<_, Directed>::from([(0, 1), (1, 2), (1, 3), (2, 4), (3, 4), (4, 5), (0, 5)]);
+        let idoms = immediate_dominators(&graph, 0);
+        assert_eq!(idoms, vec![0, 0, 1, 1, 1, 0]);
+        let frontier = frontiers(&graph, 0);
+        assert_eq!(
+            frontier,
+            vec![
+                Vec::new(),
+                Vec::new(),
+                vec![1],
+                vec![2],
+                vec![2],
+                vec![3],
+                vec![2],
+                vec![6]
+            ]
+        );
     }
 }
