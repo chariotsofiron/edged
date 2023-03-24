@@ -20,10 +20,12 @@ impl<G> LevelOrder<G> {
     where
         G: Children,
     {
+        let mut discovered = VisitMap::default();
+        discovered.visit(start);
         Self {
             graph,
             queue: VecDeque::from(vec![start]),
-            discovered: VisitMap::default(),
+            discovered,
         }
     }
 }

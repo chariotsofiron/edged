@@ -67,5 +67,13 @@ mod tests {
         ]);
         let order = PostOrder::new(&graph, 6).collect::<Vec<_>>();
         assert_eq!(order, [3, 2, 1, 5, 4, 6]);
+
+        let graph = Graph::<(), Directed>::from([(2, 3), (2, 4), (4, 1), (1, 2)]);
+        let order = PreOrder::new(&graph, 2).collect::<Vec<_>>();
+        assert_eq!(order, vec![2, 4, 1, 3]);
+        let order = LevelOrder::new(&graph, 2).collect::<Vec<_>>();
+        assert_eq!(order, vec![2, 3, 4, 1]);
+        let order = PostOrder::new(&graph, 2).collect::<Vec<_>>();
+        assert_eq!(order, vec![1, 4, 3, 2]);
     }
 }

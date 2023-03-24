@@ -19,10 +19,12 @@ impl<G> PreOrder<G> {
     where
         G: Children,
     {
+        let mut discovered = VisitMap::default();
+        discovered.visit(start);
         Self {
             graph,
             stack: vec![start],
-            discovered: VisitMap::default(),
+            discovered,
         }
     }
 }

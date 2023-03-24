@@ -2,7 +2,7 @@
 use core::marker::PhantomData;
 
 use super::{
-    traits::{Children, Directed, Direction, Parents, VertexCount},
+    traits::{Children, Directed, Direction, Outgoing, Parents, VertexCount},
     util::{extend_linearized_matrix, to_linear_matrix_position},
 };
 
@@ -130,7 +130,7 @@ pub struct Edges<'graph, Ty: Direction, E: 'graph> {
 }
 
 impl<'graph, Ty: Direction, E: 'graph> Iterator for Edges<'graph, Ty, E> {
-    type Item = (usize, usize, &'graph E);
+    type Item = (usize, &'graph E);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -147,11 +147,11 @@ impl<'graph, Ty: Direction, E: 'graph> Iterator for Edges<'graph, Ty, E> {
 
             let p = to_linear_matrix_position::<Ty>(row, column, self.node_capacity);
             if let Some(e) = self.adjacencies[p].as_ref() {
-                let (a, b) = match self.iter_direction {
-                    IterDirection::Rows => (column, row),
-                    IterDirection::Columns => (row, column),
+                let b = match self.iter_direction {
+                    IterDirection::Rows => row,
+                    IterDirection::Columns => column,
                 };
-                return Some((a, b, e));
+                return Some((b, e));
             }
         }
     }
@@ -241,5 +241,20 @@ where
 impl<'graph, E, Ty> VertexCount for &'graph Graph<E, Ty> {
     fn vertex_count(self) -> usize {
         self.n_nodes
+    }
+}
+
+impl<'graph, E, Ty> Outgoing<&'graph E> for &'graph Graph<E, Ty> where Ty: Direction {
+    type Iter = Edges<'graph, Ty, E>;
+
+    fn outgoing(self, node: usize) -> Edges<'graph, Ty, E> {
+        Edges {
+            iter_direction: IterDirection::Columns,
+            adjacencies: &self.adjacencies,
+            node_capacity: self.n_nodes,
+            row: node,
+            column: 0,
+            ty: PhantomData,
+        }
     }
 }

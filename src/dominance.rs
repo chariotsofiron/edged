@@ -74,34 +74,36 @@ where
     dominators
 }
 
-// /// Returns the dominance frontiers of all nodes of a directed graph.
-// pub fn dominance_frontiers(graph: &Graph, start: usize) -> Vec<Vec<usize>> {
-//     let mut frontiers = vec![Vec::new(); graph.len()];
-//     let idoms = immediate_dominators(graph, start);
-//     let transpose = graph.transpose(); // used for getting predecessors
+/// Returns the dominance frontiers of all nodes of a directed graph.
+pub fn frontiers<G>(graph: G, start: usize) -> Vec<Vec<usize>>
+where
+    G: Children + Parents + VertexCount,
+{
+    let mut frontiers = vec![Vec::new(); graph.vertex_count()];
+    let idoms = immediate_dominators(graph, start);
 
-//     for &node in &idoms {
-//         if node == usize::MAX {
-//             continue;
-//         }
-//         let predecessors = transpose.neighbors(node).map(|(predecessor, _)| predecessor).collect::<Vec<_>>();
-//         if predecessors.len() >= 2 {
-//             for &predecessor in &predecessors {
-//                 let mut finger = predecessor;
-//                 while finger != node {
-//                     frontiers[finger].push(node);
-//                     finger = idoms[finger];
-//                 }
-//             }
-//         }
-//     }
-//     frontiers
-// }
+    for &node in &idoms {
+        if node == usize::MAX {
+            continue;
+        }
+        let predecessors = graph.parents(node).collect::<Vec<_>>();
+        if predecessors.len() >= 2 {
+            for &predecessor in &predecessors {
+                let mut finger = predecessor;
+                while finger != node {
+                    frontiers[finger].push(node);
+                    finger = idoms[finger];
+                }
+            }
+        }
+    }
+    frontiers
+}
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        dominance::immediate_dominators,
+        dominance::{frontiers, immediate_dominators},
         graph::{matrix::Graph, traits::Directed},
     };
 
