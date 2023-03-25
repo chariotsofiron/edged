@@ -2,7 +2,7 @@
 use core::marker::PhantomData;
 
 use super::{
-    traits::{Children, Directed, Direction, Outgoing, Parents, VertexCount},
+    traits::{Children, Directed, Direction, NodeCount, Outgoing, Parents},
     util::{extend_linearized_matrix, to_linear_matrix_position},
 };
 
@@ -10,7 +10,7 @@ use super::{
 pub struct Graph<E, Ty = Directed> {
     /// The node adjacencies.
     adjacencies: Vec<Option<E>>,
-    /// The number of vertices that can be stored in the graph without reallocating.
+    /// The number of nodes that can be stored in the graph without reallocating.
     n_nodes: usize,
     /// The number of edges in the graph.
     n_edges: usize,
@@ -44,12 +44,6 @@ where
             n_nodes: capacity,
             ty: PhantomData,
         }
-    }
-
-    /// Returns the number of vertices in the graph.
-    #[must_use]
-    pub const fn len(&self) -> usize {
-        self.n_nodes
     }
 
     /// Returns `true` if the graph contains no edges.
@@ -238,8 +232,8 @@ where
     }
 }
 
-impl<'graph, E, Ty> VertexCount for &'graph Graph<E, Ty> {
-    fn vertex_count(self) -> usize {
+impl<'graph, E, Ty> NodeCount for &'graph Graph<E, Ty> {
+    fn node_count(self) -> usize {
         self.n_nodes
     }
 }

@@ -11,11 +11,11 @@
 /// Space complexity: **O(|V| + |E|)**
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Graph {
-    /// Maps a vertex id to the first edge in its adjacency list.
+    /// Maps a node id to the first edge in its adjacency list.
     first: Vec<Option<usize>>,
     /// Maps an edge id to the next edge in the same adjacency list.
     next_edge: Vec<Option<usize>>,
-    /// Maps an edge id to the vertex that it points to.
+    /// Maps an edge id to the node that it points to.
     end_vertex: Vec<usize>,
 }
 

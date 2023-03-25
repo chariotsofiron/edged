@@ -1,7 +1,7 @@
 //! Dominance algorithms
 
 use crate::{
-    graph::traits::{Children, Parents, VertexCount},
+    graph::traits::{Children, NodeCount, Parents},
     traversal::postorder::PostOrder,
 };
 
@@ -31,20 +31,20 @@ fn nearest_common_dominator(
 #[must_use]
 pub fn immediate_dominators<G>(graph: G, start: usize) -> Vec<Option<usize>>
 where
-    G: Children + Parents + VertexCount,
+    G: Children + Parents + NodeCount,
 {
     let mut order = PostOrder::new(graph, start).collect::<Vec<_>>();
     debug_assert!(order.last() == Some(&start));
 
     // Maps a node to its index in a postorder traversal
-    let mut postorder_idx = vec![0; graph.vertex_count()];
+    let mut postorder_idx = vec![0; graph.node_count()];
     for (i, &node) in order.iter().enumerate() {
         postorder_idx[node] = i;
     }
     order.pop(); // remove the start node
     order.reverse(); // reverse the postorder traversal
 
-    let mut dominators: Vec<Option<usize>> = vec![None; graph.vertex_count()];
+    let mut dominators: Vec<Option<usize>> = vec![None; graph.node_count()];
     dominators[start] = Some(start);
     let mut changed = true;
     while changed {
@@ -74,20 +74,20 @@ where
 }
 
 /// Returns the dominance frontiers of all nodes of a directed graph.
-/// 
+///
 /// The dominance frontier of a node `b` is the set of all nodes `y` such that `b` dominates a
 /// predecessor of `y` but does not strictly dominate `y`.
 pub fn frontiers<G>(graph: G, start: usize) -> Vec<Vec<usize>>
 where
-    G: Children + Parents + VertexCount,
+    G: Children + Parents + NodeCount,
 {
     // K. D. Cooper, T. J. Harvey, and K. Kennedy.
     // A Simple, Fast Dominance Algorithm.
     // Software Practice & Experience, 4:110, 2001.
     // <https://www.cs.rice.edu/~keith/EMBED/dom.pdf>
-    let mut frontiers = vec![Vec::new(); graph.vertex_count()];
+    let mut frontiers = vec![Vec::new(); graph.node_count()];
     let idoms = immediate_dominators(graph, start);
-    for node in 0..graph.vertex_count() {
+    for node in 0..graph.node_count() {
         let predecessors = graph.parents(node).collect::<Vec<_>>();
         if predecessors.len() >= 2 {
             for &predecessor in &predecessors {
