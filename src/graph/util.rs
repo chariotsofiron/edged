@@ -80,6 +80,6 @@ fn extend_flat_square_matrix<T: Default>(
 /// Extends a vector representing a lower triangular matrix to support holding `new_capacity` nodes.
 #[inline]
 fn extend_lower_triangular_matrix<T: Default>(node_adjacencies: &mut Vec<T>, new_capacity: usize) {
-    let blah = (new_capacity * (new_capacity - 1)) / 2 + new_capacity + 1;
-    ensure_len(node_adjacencies, blah);
+    let cap = to_lower_triangular_matrix_position(new_capacity, new_capacity) + 1;
+    ensure_len(node_adjacencies, cap);
 }

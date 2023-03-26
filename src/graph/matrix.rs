@@ -97,6 +97,16 @@ impl<const N: usize, Ty: Direction> From<[(usize, usize); N]> for Graph<(), Ty> 
     }
 }
 
+impl FromIterator<(usize, usize)> for Graph<(), Directed> {
+    fn from_iter<I: IntoIterator<Item = (usize, usize)>>(iter: I) -> Self {
+        let mut graph = Self::new();
+        for (from, to) in iter {
+            graph.add_edge(from, to, ());
+        }
+        graph
+    }
+}
+
 /// The direction of the iterator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IterDirection {
