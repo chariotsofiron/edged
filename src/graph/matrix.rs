@@ -99,7 +99,7 @@ impl<const N: usize, Ty: Direction> From<[(usize, usize); N]> for Graph<(), Ty> 
 
 impl<Ty: Direction> FromIterator<(usize, usize)> for Graph<(), Ty> {
     fn from_iter<I: IntoIterator<Item = (usize, usize)>>(iter: I) -> Self {
-        let mut graph: Graph<(), Ty> = Self::new();
+        let mut graph = Self::new();
         for (from, to) in iter {
             graph.add_edge(from, to, ());
         }
@@ -263,5 +263,20 @@ where
             column: 0,
             ty: PhantomData,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::graph::traits::Directed;
+    use crate::graph::traits::NodeCount;
+
+    use super::Graph;
+
+    #[test]
+    fn graph_from_iter() {
+        let edges = vec![(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)];
+        let graph: Graph<(), Directed> = Graph::from_iter(edges);
+        assert_eq!(graph.node_count(), 6);
     }
 }
