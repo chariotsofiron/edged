@@ -20,7 +20,7 @@ impl VisitMap {
     /// Returns `true` if this is the first visit to this node and
     /// marks it as visited.
     pub fn visit(&mut self, node: usize) -> bool {
-        ensure_len(&mut self.discovered, node.wrapping_add(1));
+        ensure_len(&mut self.discovered, node + 1);
         if self.discovered[node] {
             false
         } else {

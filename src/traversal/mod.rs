@@ -53,7 +53,7 @@ mod tests {
         let order = PostOrder::new(&graph, 1).collect::<Vec<_>>();
         assert_eq!(order, [6, 5, 2, 4, 1]);
 
-        // graph from dominance paper
+        // graph from figure 4 of dominance paper
         let graph = Graph::<_, Directed>::from([
             (6, 5),
             (6, 4),

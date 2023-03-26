@@ -59,7 +59,7 @@ where
     /// Panics if either of the nodes don't exist.
     pub fn add_edge(&mut self, a: usize, b: usize, weight: E) {
         // allocate if needed
-        let max_node = (a.wrapping_add(1)).max(b.wrapping_add(1));
+        let max_node = (a + 1).max(b + 1);
         if max_node > self.n_nodes {
             extend_linearized_matrix::<Ty, Option<E>>(
                 &mut self.adjacencies,
@@ -135,8 +135,8 @@ impl<'graph, Ty: Direction, E: 'graph> Iterator for Edges<'graph, Ty, E> {
             let (row, column) = (self.row, self.column);
 
             match self.iter_direction {
-                IterDirection::Rows => self.row = self.row.wrapping_add(1),
-                IterDirection::Columns => self.column = self.column.wrapping_add(1),
+                IterDirection::Rows => self.row += 1,
+                IterDirection::Columns => self.column += 1,
             }
 
             let p = to_linear_matrix_position::<Ty>(row, column, self.node_capacity);
@@ -180,8 +180,8 @@ impl<'graph, Ty: Direction, E: 'graph> Iterator for Neighbors<'graph, Ty, E> {
             let (row, column) = (self.row, self.column);
 
             match self.iter_direction {
-                IterDirection::Rows => self.row = self.row.wrapping_add(1),
-                IterDirection::Columns => self.column = self.column.wrapping_add(1),
+                IterDirection::Rows => self.row += 1,
+                IterDirection::Columns => self.column += 1,
             }
 
             let p = to_linear_matrix_position::<Ty>(row, column, self.node_capacity);
