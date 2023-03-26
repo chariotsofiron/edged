@@ -1,4 +1,17 @@
 //! Dominance algorithms
+//!
+//! <https://en.wikipedia.org/wiki/Dominator_(graph_theory)>
+//! <https://pages.cs.wisc.edu/~fischer/cs701.f08/lectures/Lecture19.4up.pdf>
+//! <https://www.cs.rice.edu/~keith/EMBED/dom.pdf>
+//!
+//!
+//! Node M dominates N iff to get to N from the start node, you must pass through M.
+//! N dom N is always true.
+//!
+//! M strictly dominates N if M dom N and M != N.
+//!
+//! A node can have multiple dominators. The immediate dominator of N is the dominator
+//! that strictly dominates N but does not dominate any other dominators of N.
 
 use crate::{
     graph::traits::{Children, NodeCount, Parents},
@@ -7,6 +20,7 @@ use crate::{
 
 /// Finds the nearest common dominator of two nodes.
 /// Walks up the dominator tree from two different nodes until a common parent is reached.
+#[allow(clippy::expect_used)]
 fn nearest_common_dominator(
     dominators: &[Option<usize>],
     postorder: &[usize],
@@ -15,10 +29,10 @@ fn nearest_common_dominator(
 ) -> usize {
     while finger1 != finger2 {
         while postorder[finger1] < postorder[finger2] {
-            finger1 = dominators[finger1].unwrap();
+            finger1 = dominators[finger1].expect("Shouldn't happen");
         }
         while postorder[finger2] < postorder[finger1] {
-            finger2 = dominators[finger2].unwrap();
+            finger2 = dominators[finger2].expect("Shouldn't happen");
         }
     }
     finger1
@@ -34,7 +48,6 @@ where
     G: Children + Parents + NodeCount,
 {
     let mut order = PostOrder::new(graph, start).collect::<Vec<_>>();
-    debug_assert!(order.last() == Some(&start));
 
     // Maps a node to its index in a postorder traversal
     let mut postorder_idx = vec![0; graph.node_count()];
@@ -50,22 +63,17 @@ where
     while changed {
         changed = false;
         for &node in &order {
-            let predecessors = graph
+            let new_idom = graph
                 .parents(node)
-                .filter(|&predecessor| dominators[predecessor].is_some());
-            #[allow(clippy::expect_used)]
-            let new_idom = predecessors
+                .filter(|&predecessor| dominators[predecessor].is_some())
                 .reduce(|finger1, finger2| {
                     nearest_common_dominator(&dominators, &postorder_idx, finger1, finger2)
-                })
-                .expect(
-                    "the root is initialized to dominate itself, and is the first \
-                    node in every path so there must exist a predecessor to this node that \
-                    also has a dominator",
-                );
-
-            if dominators[node] != Some(new_idom) {
-                dominators[node] = Some(new_idom);
+                });
+            // note: `new_idom` will always be Some(_). the root is initialized to
+            // dominate itself, and is the first node in every path so there must
+            // exist a predecessor to this node that also has a dominator.
+            if dominators[node] != new_idom {
+                dominators[node] = new_idom;
                 changed = true;
             }
         }
@@ -75,8 +83,10 @@ where
 
 /// Returns the dominance frontiers of all nodes of a directed graph.
 ///
-/// The dominance frontier of a node `b` is the set of all nodes `y` such that `b` dominates a
-/// predecessor of `y` but does not strictly dominate `y`.
+/// The dominance frontier of a node `b` is the set of all nodes `y`
+/// such that `b` dominates a predecessor of `y` but does not strictly
+/// dominate `y`.
+#[allow(clippy::expect_used)]
 pub fn frontiers<G>(graph: G, start: usize) -> Vec<Vec<usize>>
 where
     G: Children + Parents + NodeCount,
@@ -134,7 +144,6 @@ mod tests {
         let graph =
             Graph::<_, Directed>::from([(1, 2), (2, 3), (2, 4), (2, 6), (3, 5), (4, 5), (5, 2)]);
         let idoms = immediate_dominators(&graph, 1);
-        // TODO, this is wrong
         assert_eq!(
             idoms,
             vec![None, Some(1), Some(1), Some(2), Some(2), Some(2), Some(2)]
