@@ -69,9 +69,10 @@ where
                 .reduce(|finger1, finger2| {
                     nearest_common_dominator(&dominators, &postorder_idx, finger1, finger2)
                 });
-            // note: `new_idom` will always be Some(_). the root is initialized to
-            // dominate itself, and is the first node in every path so there must
-            // exist a predecessor to this node that also has a dominator.
+            // The root is initialized to dominate itself, and is the first node in
+            // every path so there must exist a predecessor to this node that also
+            // has a dominator.
+            debug_assert!(new_idom.is_some());
             if dominators[node] != new_idom {
                 dominators[node] = new_idom;
                 changed = true;
